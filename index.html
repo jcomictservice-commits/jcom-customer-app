@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>JCOM ICT Service - ຊ້ອບປິ້ງອອນລາຍ</title>
+<link rel="manifest" href="data:application/json,{%22name%22:%22JCOM%20ICT%20Service%22,%22short_name%22:%22JCOM%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23ffffff%22,%22theme_color%22:%22%231a56db%22}">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Noto Sans Lao','Segoe UI',sans-serif; background:#f8fafc; color:#1f2937; padding-bottom:70px; }
+.header { background:linear-gradient(135deg,#1a56db,#1e40af); color:#fff; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+.header h1 { font-size:18px; font-weight:700; }
+.cart-btn { position:relative; background:rgba(255,255,255,0.2); border:none; color:#fff; width:40px; height:40px; border-radius:50%; font-size:18px; cursor:pointer; }
+.cart-badge { position:absolute; top:-4px; right:-4px; background:#dc2626; color:#fff; font-size:10px; font-weight:700; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+.sec { display:none; padding:14px; }
+.sec.active { display:block; }
+.card { background:#fff; border-radius:14px; padding:14px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+.pt { font-size:20px; font-weight:700; margin-bottom:12px; }
+.ld { text-align:center; color:#9ca3af; padding:30px; font-size:14px; }
+.prod-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.prod-card { background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+.prod-img { width:100%; aspect-ratio:1; object-fit:cover; background:#f3f4f6; }
+.prod-body { padding:10px; }
+.prod-name { font-size:13px; font-weight:600; line-height:1.3; margin-bottom:4px; height:34px; overflow:hidden; }
+.prod-price { color:#1a56db; font-weight:800; font-size:15px; margin-bottom:4px; }
+.prod-spec { font-size:11px; color:#6b7280; margin-bottom:8px; height:28px; overflow:hidden; }
+.add-cart-btn { width:100%; background:#1a56db; color:#fff; border:none; padding:8px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; }
+.promo-badge { position:absolute; background:#f59e0b; color:#fff; font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; margin:6px; }
+.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:#fff; display:flex; box-shadow:0 -2px 8px rgba(0,0,0,0.08); z-index:100; }
+.nav-item { flex:1; text-align:center; padding:8px 4px; cursor:pointer; color:#9ca3af; font-size:10px; }
+.nav-item.active { color:#1a56db; }
+.nav-item .ic { font-size:20px; display:block; margin-bottom:2px; }
+.contact-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #f3f4f6; }
+.contact-row:last-child { border-bottom:none; }
+.contact-ic { font-size:24px; width:40px; text-align:center; }
+.contact-btn { background:#25d366; color:#fff; border:none; padding:8px 16px; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; text-decoration:none; display:inline-block; }
+.inp { width:100%; padding:12px; border:1px solid #e5e7eb; border-radius:10px; font-size:15px; margin-bottom:10px; font-family:inherit; }
+.pb { width:100%; padding:14px; border:none; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; }
+.cart-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f3f4f6; }
+.cart-item img { width:56px; height:56px; object-fit:cover; border-radius:8px; flex-shrink:0; }
+.qty-ctrl { display:flex; align-items:center; gap:8px; }
+.qty-btn { width:26px; height:26px; border-radius:50%; border:1px solid #e5e7eb; background:#fff; cursor:pointer; font-size:14px; }
+.modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; align-items:flex-end; }
+.modal-overlay.active { display:flex; }
+.modal-box { background:#fff; width:100%; max-height:85vh; overflow-y:auto; border-radius:20px 20px 0 0; padding:20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🛍️ JCOM ICT Service</h1>
+  <button class="cart-btn" onclick="openCart()">🛒<span class="cart-badge" id="cart-badge" style="display:none">0</span></button>
+</div>
+
+<!-- PROMO -->
+<div id="sec-promo" class="sec active">
+  <div class="pt">🎉 ໂປໂມຊັນ</div>
+  <div class="prod-grid" id="promo-grid"><div class="ld">⏳ ກຳລັງໂຫຼດ...</div></div>
+</div>
+
+<!-- ALL PRODUCTS -->
+<div id="sec-products" class="sec">
+  <div class="pt">📦 ສິນຄ້າທັງໝົດ</div>
+  <input class="inp" id="products-search" placeholder="🔍 ຄົ້ນຫາສິນຄ້າ...">
+  <div class="prod-grid" id="products-grid"><div class="ld">⏳ ກຳລັງໂຫຼດ...</div></div>
+</div>
+
+<!-- CREDIT OFFICER -->
+<div id="sec-credit" class="sec">
+  <div class="pt">💳 ຕິດຕໍ່ພະນັກງານສິນເຊື່ອ</div>
+  <div class="card">
+    <div class="contact-row">
+      <div class="contact-ic">👤</div>
+      <div style="flex:1"><div style="font-weight:700">ພະນັກງານສິນເຊື່ອ JCOM</div><div style="font-size:13px;color:#6b7280">ພ້ອມໃຫ້ຄຳປຶກສາຜ່ອນສິນຄ້າ</div></div>
+      <a class="contact-btn" href="https://wa.me/85602077769999" target="_blank">💬 WhatsApp</a>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT -->
+<div id="sec-contact" class="sec">
+  <div class="pt">💬 ຕິດຕໍ່ສອບຖາມ</div>
+  <div class="card">
+    <div class="contact-row">
+      <div class="contact-ic">📱</div>
+      <div style="flex:1"><div style="font-weight:700">WhatsApp</div><div style="font-size:13px;color:#6b7280">02077769999</div></div>
+      <a class="contact-btn" href="https://wa.me/85602077769999" target="_blank">💬 ແຊັດ</a>
+    </div>
+    <div class="contact-row">
+      <div class="contact-ic">📞</div>
+      <div style="flex:1"><div style="font-weight:700">ໂທລະສັບ</div><div style="font-size:13px;color:#6b7280">020 7776 9999</div></div>
+      <a class="contact-btn" style="background:#1a56db" href="tel:02077769999">📞 ໂທ</a>
+    </div>
+  </div>
+</div>
+
+<!-- SHOP INFO -->
+<div id="sec-shop" class="sec">
+  <div class="pt">🏪 ຂໍ້ມູນຮ້ານ</div>
+  <div class="card">
+    <div style="font-weight:700;font-size:16px;margin-bottom:8px">Jcom ICT Service</div>
+    <div style="font-size:14px;color:#6b7280;margin-bottom:4px">📍 ປາກເຊ, ຈຳປາສັກ</div>
+    <div style="font-size:14px;color:#6b7280;margin-bottom:4px">🕐 ເປີດທຸກມື້ 08:00 - 17:20</div>
+    <div style="font-size:14px;color:#6b7280">📱 WhatsApp/ໂທ: 020 7776 9999</div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active" data-sec="promo"><span class="ic">🎉</span>ໂປໂມຊັນ</div>
+  <div class="nav-item" data-sec="products"><span class="ic">📦</span>ສິນຄ້າ</div>
+  <div class="nav-item" data-sec="credit"><span class="ic">💳</span>ສິນເຊື່ອ</div>
+  <div class="nav-item" data-sec="contact"><span class="ic">💬</span>ຕິດຕໍ່</div>
+  <div class="nav-item" data-sec="shop"><span class="ic">🏪</span>ຂໍ້ມູນຮ້ານ</div>
+</div>
+
+<!-- CART MODAL -->
+<div class="modal-overlay" id="cart-modal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="pt" style="margin:0">🛒 ກະຕ້າສິນຄ້າ</div>
+      <button onclick="closeCart()" style="background:none;border:none;font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div id="cart-items"></div>
+    <div id="cart-total" style="text-align:right;font-size:18px;font-weight:800;color:#1a56db;margin:14px 0"></div>
+    <button class="pb" style="background:#1a56db;color:#fff" onclick="openCheckout()">ດຳເນີນການສັ່ງຊື້</button>
+  </div>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div class="modal-overlay" id="checkout-modal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="pt" style="margin:0">📝 ຂໍ້ມູນສັ່ງຊື້</div>
+      <button onclick="closeCheckout()" style="background:none;border:none;font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <input class="inp" id="chk-name" placeholder="ຊື່-ນາມສະກຸນ">
+    <input class="inp" id="chk-phone" placeholder="ເບີໂທ" type="tel">
+    <input class="inp" id="chk-address" placeholder="ທີ່ຢູ່ (ທາງເລືອກ)">
+    <button class="pb" style="background:#16a34a;color:#fff" onclick="submitOrder()" id="btn-submit-order">✅ ຢືນຢັນສັ່ງຊື້</button>
+  </div>
+</div>
+
+<script>
+var POS_URL = 'https://165.22.242.64.nip.io';
+var cart = JSON.parse(localStorage.getItem('jcom_cart') || '[]');
+var allProductsCache = [];
+
+function switchSec(name) {
+  document.querySelectorAll('.sec').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('sec-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.toggle('active', n.getAttribute('data-sec')===name); });
+}
+
+document.querySelectorAll('.nav-item').forEach(function(item){
+  item.addEventListener('click', function(){ switchSec(this.getAttribute('data-sec')); });
+});
+
+function renderProductCard(p) {
+  var img = p.image ? (p.image.indexOf('http')===0 ? p.image : POS_URL + p.image) : '';
+  var specText = (p.spec && p.spec.length) ? p.spec.slice(0,2).join(' • ') : '';
+  var promoBadge = p.category === 'promo' ? '<div class="promo-badge">🔥 ໂປໂມ</div>' : '';
+  var safeData = encodeURIComponent(JSON.stringify(p));
+  return '<div class="prod-card" style="position:relative">'
+    + promoBadge
+    + (img ? '<img class="prod-img" src="'+img+'" loading="lazy">' : '<div class="prod-img" style="display:flex;align-items:center;justify-content:center;font-size:32px">📦</div>')
+    + '<div class="prod-body">'
+    + '<div class="prod-name">'+p.name+'</div>'
+    + '<div class="prod-price">₭'+p.price.toLocaleString()+'</div>'
+    + '<div class="prod-spec">'+specText+'</div>'
+    + '<button class="add-cart-btn" data-p="'+safeData+'">+ ໃສ່ກະຕ້າ</button>'
+    + '</div></div>';
+}
+
+function bindAddButtons(container) {
+  container.querySelectorAll('.add-cart-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var p = JSON.parse(decodeURIComponent(this.getAttribute('data-p')));
+      addToCart(p);
+    });
+  });
+}
+
+function loadPromo() {
+  fetch(POS_URL + '/customer-app/products?category=promo')
+  .then(function(r){return r.json();})
+  .then(function(res){
+    var grid = document.getElementById('promo-grid');
+    if (!res.ok || !res.data.length) { grid.innerHTML = '<div class="ld" style="grid-column:1/-1">ຍັງບໍ່ມີໂປໂມຊັນ</div>'; return; }
+    grid.innerHTML = res.data.map(renderProductCard).join('');
+    bindAddButtons(grid);
+  });
+}
+
+function loadAllProducts() {
+  fetch(POS_URL + '/customer-app/products')
+  .then(function(r){return r.json();})
+  .then(function(res){
+    allProductsCache = res.data || [];
+    renderProductsGrid(allProductsCache);
+  });
+}
+
+function renderProductsGrid(list) {
+  var grid = document.getElementById('products-grid');
+  if (!list.length) { grid.innerHTML = '<div class="ld" style="grid-column:1/-1">ຍັງບໍ່ມີສິນຄ້າ</div>'; return; }
+  grid.innerHTML = list.map(renderProductCard).join('');
+  bindAddButtons(grid);
+}
+
+document.getElementById('products-search').addEventListener('input', function(){
+  var q = this.value.trim().toLowerCase();
+  var filtered = q ? allProductsCache.filter(function(p){ return p.name.toLowerCase().indexOf(q) > -1; }) : allProductsCache;
+  renderProductsGrid(filtered);
+});
+
+function addToCart(p) {
+  var existing = cart.find(function(it){ return it.productId === p.productId; });
+  if (existing) { existing.qty += 1; }
+  else { cart.push({ productId:p.productId, name:p.name, price:p.price, image:p.image, qty:1 }); }
+  saveCart();
+  alert('✅ ເພີ່ມ "'+p.name+'" ໃສ່ກະຕ້າແລ້ວ');
+}
+
+function saveCart() {
+  localStorage.setItem('jcom_cart', JSON.stringify(cart));
+  updateCartBadge();
+}
+
+function updateCartBadge() {
+  var badge = document.getElementById('cart-badge');
+  var count = cart.reduce(function(s,it){ return s+it.qty; }, 0);
+  if (count > 0) { badge.style.display='flex'; badge.textContent = count; }
+  else { badge.style.display='none'; }
+}
+
+function openCart() {
+  renderCart();
+  document.getElementById('cart-modal').classList.add('active');
+}
+function closeCart() { document.getElementById('cart-modal').classList.remove('active'); }
+
+function renderCart() {
+  var box = document.getElementById('cart-items');
+  if (!cart.length) { box.innerHTML = '<div class="ld">ກະຕ້າຫວ່າງເປົ່າ</div>'; document.getElementById('cart-total').textContent = ''; return; }
+  box.innerHTML = cart.map(function(it, idx){
+    var img = it.image ? (it.image.indexOf('http')===0 ? it.image : POS_URL + it.image) : '';
+    return '<div class="cart-item">'
+      + (img ? '<img src="'+img+'">' : '<div style="width:56px;height:56px;background:#f3f4f6;border-radius:8px;flex-shrink:0"></div>')
+      + '<div style="flex:1"><div style="font-weight:600;font-size:13px">'+it.name+'</div><div style="color:#1a56db;font-weight:700">₭'+it.price.toLocaleString()+'</div></div>'
+      + '<div class="qty-ctrl"><button class="qty-btn" data-idx="'+idx+'" data-d="-1">-</button><span>'+it.qty+'</span><button class="qty-btn" data-idx="'+idx+'" data-d="1">+</button></div>'
+      + '<button class="rm-btn" data-idx="'+idx+'" style="background:none;border:none;color:#dc2626;font-size:16px;cursor:pointer;margin-left:6px">🗑</button>'
+      + '</div>';
+  }).join('');
+  var total = cart.reduce(function(s,it){ return s + it.price*it.qty; }, 0);
+  document.getElementById('cart-total').textContent = 'ລວມ: ₭' + total.toLocaleString();
+
+  box.querySelectorAll('.qty-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      changeQty(parseInt(this.getAttribute('data-idx')), parseInt(this.getAttribute('data-d')));
+    });
+  });
+  box.querySelectorAll('.rm-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ removeFromCart(parseInt(this.getAttribute('data-idx'))); });
+  });
+}
+
+function changeQty(idx, delta) {
+  cart[idx].qty += delta;
+  if (cart[idx].qty <= 0) cart.splice(idx, 1);
+  saveCart(); renderCart();
+}
+function removeFromCart(idx) { cart.splice(idx,1); saveCart(); renderCart(); }
+
+function openCheckout() {
+  if (!cart.length) { alert('ກະຕ້າຫວ່າງເປົ່າ'); return; }
+  closeCart();
+  document.getElementById('checkout-modal').classList.add('active');
+}
+function closeCheckout() { document.getElementById('checkout-modal').classList.remove('active'); }
+
+function submitOrder() {
+  var name = document.getElementById('chk-name').value.trim();
+  var phone = document.getElementById('chk-phone').value.trim();
+  var address = document.getElementById('chk-address').value.trim();
+  if (!name || !phone) { alert('ກະລຸນາໃສ່ຊື່ ແລະ ເບີໂທ'); return; }
+
+  var btn = document.getElementById('btn-submit-order');
+  btn.disabled = true; btn.textContent = '⏳ ກຳລັງສົ່ງ...';
+
+  fetch(POS_URL + '/customer-app/order', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ items:cart, customerName:name, phone:phone, address:address })
+  }).then(function(r){return r.json();}).then(function(res){
+    if (res.ok) {
+      alert('🎉 ສັ່ງຊື້ສຳເລັດ! ພະນັກງານຈະຕິດຕໍ່ກັບຫາທ່ານໄວໆນີ້');
+      cart = []; saveCart();
+      closeCheckout();
+      document.getElementById('chk-name').value='';
+      document.getElementById('chk-phone').value='';
+      document.getElementById('chk-address').value='';
+    } else {
+      alert('❌ ' + (res.error||'ສັ່ງຊື້ບໍ່ໄດ້'));
+    }
+    btn.disabled = false; btn.textContent = '✅ ຢືນຢັນສັ່ງຊື້';
+  }).catch(function(){ alert('❌ ເຊື່ອມ Server ບໍ່ໄດ້'); btn.disabled = false; btn.textContent = '✅ ຢືນຢັນສັ່ງຊື້'; });
+}
+
+updateCartBadge();
+loadPromo();
+loadAllProducts();
+</script>
+</body>
+</html>
