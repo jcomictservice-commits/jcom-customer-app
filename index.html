@@ -23,7 +23,11 @@ body { font-family:'Noto Sans Lao','Segoe UI',sans-serif; background:#f8fafc; co
 .prod-body { padding:10px; }
 .prod-name { font-size:13px; font-weight:600; line-height:1.3; margin-bottom:4px; height:34px; overflow:hidden; }
 .prod-price { color:#1a56db; font-weight:800; font-size:15px; margin-bottom:4px; }
-.prod-spec { font-size:11px; color:#6b7280; margin-bottom:8px; height:28px; overflow:hidden; }
+.prod-spec { font-size:11px; color:#16a34a; margin-bottom:8px; min-height:28px; line-height:1.4; }
+.prod-spec span { display:block; }
+.cat-chips { display:flex; gap:8px; overflow-x:auto; padding-bottom:10px; margin-bottom:10px; -webkit-overflow-scrolling:touch; }
+.cat-chip { flex-shrink:0; padding:8px 16px; border-radius:20px; background:#fff; border:1px solid #e5e7eb; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
+.cat-chip.active { background:#1a56db; color:#fff; border-color:#1a56db; }
 .add-cart-btn { width:100%; background:#1a56db; color:#fff; border:none; padding:8px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; }
 .promo-badge { position:absolute; background:#f59e0b; color:#fff; font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; margin:6px; }
 .bottom-nav { position:fixed; bottom:0; left:0; right:0; background:#fff; display:flex; box-shadow:0 -2px 8px rgba(0,0,0,0.08); z-index:100; }
@@ -62,6 +66,7 @@ body { font-family:'Noto Sans Lao','Segoe UI',sans-serif; background:#f8fafc; co
 <div id="sec-products" class="sec">
   <div class="pt">📦 ສິນຄ້າທັງໝົດ</div>
   <input class="inp" id="products-search" placeholder="🔍 ຄົ້ນຫາສິນຄ້າ...">
+  <div class="cat-chips" id="cat-chips"></div>
   <div class="prod-grid" id="products-grid"><div class="ld">⏳ ກຳລັງໂຫຼດ...</div></div>
 </div>
 
@@ -158,7 +163,7 @@ document.querySelectorAll('.nav-item').forEach(function(item){
 
 function renderProductCard(p) {
   var img = p.image ? (p.image.indexOf('http')===0 ? p.image : POS_URL + p.image) : '';
-  var specText = (p.spec && p.spec.length) ? p.spec.slice(0,2).join(' • ') : '';
+  var specText = (p.spec && p.spec.length) ? p.spec.slice(0,3).map(function(s){ return '<span>✓ '+s+'</span>'; }).join('') : '';
   var promoBadge = p.category === 'promo' ? '<div class="promo-badge">🔥 ໂປໂມ</div>' : '';
   var safeData = encodeURIComponent(JSON.stringify(p));
   return '<div class="prod-card" style="position:relative">'
@@ -192,13 +197,50 @@ function loadPromo() {
   });
 }
 
+var currentCategoryFilter = '';
+
 function loadAllProducts() {
   fetch(POS_URL + '/customer-app/products')
   .then(function(r){return r.json();})
   .then(function(res){
     allProductsCache = res.data || [];
-    renderProductsGrid(allProductsCache);
+    renderCategoryChips();
+    applyFilters();
   });
+}
+
+function renderCategoryChips() {
+  var groups = {};
+  allProductsCache.forEach(function(p){
+    var g = (p.groupName||'').trim();
+    if (g) groups[g] = true;
+  });
+  var groupNames = Object.keys(groups);
+  var box = document.getElementById('cat-chips');
+  if (!groupNames.length) { box.innerHTML = ''; return; }
+
+  var html = '<div class="cat-chip active" data-cat="">ທັງໝົດ</div>';
+  html += groupNames.map(function(g){
+    return '<div class="cat-chip" data-cat="'+g.replace(/"/g,'&quot;')+'">'+g+'</div>';
+  }).join('');
+  box.innerHTML = html;
+
+  box.querySelectorAll('.cat-chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      box.querySelectorAll('.cat-chip').forEach(function(c){ c.classList.remove('active'); });
+      this.classList.add('active');
+      currentCategoryFilter = this.getAttribute('data-cat');
+      applyFilters();
+    });
+  });
+}
+
+function applyFilters() {
+  var q = document.getElementById('products-search').value.trim().toLowerCase();
+  var filtered = allProductsCache;
+  if (currentCategoryFilter) filtered = filtered.filter(function(p){ return (p.groupName||'') === currentCategoryFilter; });
+  if (q) filtered = filtered.filter(function(p){ return p.name.toLowerCase().indexOf(q) > -1; });
+  renderProductsGrid(filtered);
 }
 
 function renderProductsGrid(list) {
@@ -208,11 +250,7 @@ function renderProductsGrid(list) {
   bindAddButtons(grid);
 }
 
-document.getElementById('products-search').addEventListener('input', function(){
-  var q = this.value.trim().toLowerCase();
-  var filtered = q ? allProductsCache.filter(function(p){ return p.name.toLowerCase().indexOf(q) > -1; }) : allProductsCache;
-  renderProductsGrid(filtered);
-});
+document.getElementById('products-search').addEventListener('input', applyFilters);
 
 function addToCart(p) {
   var existing = cart.find(function(it){ return it.productId === p.productId; });
