@@ -62,7 +62,7 @@ body { font-family:'Noto Sans Lao','Segoe UI',sans-serif; background:#f8fafc; co
 <!-- PROMO -->
 <div id="sec-promo" class="sec active">
   <div class="pt">🎉 ໂປໂມຊັນ</div>
-  <div class="prod-grid" id="promo-grid"><div class="ld">⏳ ກຳລັງໂຫຼດ...</div></div>
+  <div id="promo-grid" style="display:flex;flex-direction:column;gap:14px"><div class="ld">⏳ ກຳລັງໂຫຼດ...</div></div>
 </div>
 
 <!-- ALL PRODUCTS -->
@@ -190,20 +190,28 @@ function bindAddButtons(container) {
 }
 
 function loadPromo() {
-  fetch(POS_URL + '/customer-app/products?category=promo')
+  fetch(POS_URL + '/customer-app/promo-banners')
   .then(function(r){return r.json();})
   .then(function(res){
-    var grid = document.getElementById('promo-grid');
-    if (!res.ok || !res.data.length) { grid.innerHTML = '<div class="ld" style="grid-column:1/-1">ຍັງບໍ່ມີໂປໂມຊັນ</div>'; return; }
-    grid.innerHTML = res.data.map(renderProductCard).join('');
-    bindAddButtons(grid);
+    var box = document.getElementById('promo-grid');
+    if (!res.ok || !res.data.length) { box.innerHTML = '<div class="ld">ຍັງບໍ່ມີໂປໂມຊັນ</div>'; return; }
+    box.innerHTML = res.data.map(function(b){
+      var img = b.image.indexOf('http')===0 ? b.image : POS_URL + b.image;
+      return '<div class="card" style="padding:0;overflow:hidden">'
+        + '<img src="'+img+'" style="width:100%;display:block">'
+        + (b.title || b.description ? '<div style="padding:12px">'
+          + (b.title ? '<div style="font-weight:700;font-size:16px;margin-bottom:4px">'+b.title+'</div>' : '')
+          + (b.description ? '<div style="font-size:13px;color:#6b7280;white-space:pre-line">'+b.description+'</div>' : '')
+          + '</div>' : '')
+        + '</div>';
+    }).join('');
   });
 }
 
 var currentCategoryFilter = '';
 
 function loadAllProducts() {
-  fetch(POS_URL + '/customer-app/products')
+  fetch(POS_URL + '/customer-app/all-products')
   .then(function(r){return r.json();})
   .then(function(res){
     allProductsCache = res.data || [];
